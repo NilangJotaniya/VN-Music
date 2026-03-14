@@ -9,7 +9,7 @@ import { useToast } from './ToastContext';
 
 const JamContext = createContext(null);
 const STORAGE_KEY = 'vn_jam_member';
-const SYNC_AHEAD_BUFFER_MS = 350;
+const SYNC_AHEAD_BUFFER_MS = 650;
 
 const getDisplayName = (user) => user?.name || `Guest ${Math.floor(100 + Math.random() * 900)}`;
 
@@ -263,7 +263,7 @@ export const JamProvider = ({ children }) => {
     if (!session?.code || !session.isHost || !currentSong) return undefined;
     const interval = setInterval(() => {
       syncHostPlayback(currentTimeRef.current);
-    }, 750);
+    }, 500);
     return () => clearInterval(interval);
   }, [currentSong, session?.code, session?.isHost, syncHostPlayback]);
 
@@ -271,7 +271,7 @@ export const JamProvider = ({ children }) => {
     if (!session?.code || !memberId) return undefined;
     const interval = setInterval(() => {
       refreshSession({ silent: true });
-    }, 1500);
+    }, 1000);
     return () => clearInterval(interval);
   }, [memberId, refreshSession, session?.code]);
 
