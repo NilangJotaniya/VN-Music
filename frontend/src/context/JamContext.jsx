@@ -202,7 +202,6 @@ export const JamProvider = ({ children }) => {
       const response = await jamAPI.get(session.code, memberId);
       const nextSession = normalizeSession(response.data.session, memberId);
       setSession(nextSession);
-      subscribeSocket(nextSession.code, memberId);
     } catch (error) {
       if (isLeavingRef.current) return;
       if (!silent) {
@@ -213,7 +212,7 @@ export const JamProvider = ({ children }) => {
       setSession(null);
       setMemberId(null);
     }
-  }, [clearMember, memberId, normalizeSession, session, subscribeSocket, toast, unsubscribeSocket]);
+  }, [clearMember, memberId, normalizeSession, session, toast, unsubscribeSocket]);
 
   const emitSocket = useCallback((event, payload) => {
     if (!session?.code || !memberId) return;
@@ -256,7 +255,7 @@ export const JamProvider = ({ children }) => {
     if (!session?.code || !session.isHost || !currentSong) return undefined;
     const interval = setInterval(() => {
       syncHostPlayback(currentTimeRef.current);
-    }, 2000);
+    }, 1000);
     return () => clearInterval(interval);
   }, [currentSong, session?.code, session?.isHost, syncHostPlayback]);
 
@@ -264,9 +263,30 @@ export const JamProvider = ({ children }) => {
     if (!session?.code || !memberId) return undefined;
     const interval = setInterval(() => {
       refreshSession({ silent: true });
-    }, 60000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [memberId, refreshSession, session?.code]);
+
+  useEffect(() => {
+    if (!session?.code || !memberId) return undefined;
+
+    const handleResumeSync = () => {
+      if (document.visibilityState === 'visible') {
+        refreshSession({ silent: true });
+        if (sessionRef.current?.isHost) {
+          syncHostPlayback(currentTimeRef.current);
+        }
+      }
+    };
+
+    window.addEventListener('focus', handleResumeSync);
+    document.addEventListener('visibilitychange', handleResumeSync);
+
+    return () => {
+      window.removeEventListener('focus', handleResumeSync);
+      document.removeEventListener('visibilitychange', handleResumeSync);
+    };
+  }, [memberId, refreshSession, session?.code, syncHostPlayback]);
 
   useEffect(() => {
     if (!session?.playback || session.isHost) return;
