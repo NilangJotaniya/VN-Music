@@ -8,7 +8,18 @@ const User = require('../models/User');
 const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
-    res.json({ user });
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatarUrl: user.avatarUrl || '',
+        bio: user.bio || '',
+        createdAt: user.createdAt,
+        favoritesCount: user.favorites?.length || 0,
+        recentlyPlayedCount: user.recentlyPlayed?.length || 0,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching profile.' });
   }
@@ -17,7 +28,7 @@ const getProfile = async (req, res) => {
 // PUT /api/user/profile
 const updateProfile = async (req, res) => {
   try {
-    const { name, avatarUrl } = req.body;
+    const { name, avatarUrl, bio } = req.body;
 
     const user = await User.findById(req.user._id);
     if (!user) {
@@ -36,6 +47,10 @@ const updateProfile = async (req, res) => {
       user.avatarUrl = avatarUrl.trim();
     }
 
+    if (typeof bio === 'string') {
+      user.bio = bio.trim().slice(0, 160);
+    }
+
     await user.save();
 
     return res.json({
@@ -45,6 +60,10 @@ const updateProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         avatarUrl: user.avatarUrl || '',
+        bio: user.bio || '',
+        createdAt: user.createdAt,
+        favoritesCount: user.favorites?.length || 0,
+        recentlyPlayedCount: user.recentlyPlayed?.length || 0,
       },
     });
   } catch (error) {

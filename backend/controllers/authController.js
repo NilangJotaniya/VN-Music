@@ -48,6 +48,8 @@ const register = async (req, res) => {
         name:  user.name,
         email: user.email,
         avatarUrl: user.avatarUrl || '',
+        bio: user.bio || '',
+        createdAt: user.createdAt,
       },
     });
   } catch (error) {
@@ -94,6 +96,8 @@ const login = async (req, res) => {
         name:  user.name,
         email: user.email,
         avatarUrl: user.avatarUrl || '',
+        bio: user.bio || '',
+        createdAt: user.createdAt,
       },
     });
   } catch (error) {

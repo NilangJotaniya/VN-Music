@@ -35,6 +35,12 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    bio: {
+      type: String,
+      trim: true,
+      default: '',
+      maxlength: 160,
+    },
     favorites: [
       {
         // Each favorite is a YouTube video embedded object (not a ref to another collection)

@@ -68,9 +68,14 @@ export default function MusicPlayer() {
 
   if (!currentSong) {
     return (
-      <div className="h-[72px] border-t border-[#2a2a3a] bg-[#0d0d15] px-6">
-        <div className="flex h-full items-center justify-center text-sm text-[#666688]">Select a song to start listening</div>
-      </div>
+      <>
+        <div className="hidden h-[72px] border-t border-[#2a2a3a] bg-[#0d0d15] px-6 md:block">
+          <div className="flex h-full items-center justify-center text-sm text-[#666688]">Select a song to start listening</div>
+        </div>
+        <div className="fixed bottom-[72px] left-0 right-0 z-20 border-t border-white/8 bg-[#0d0d15]/96 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden">
+          <div className="flex items-center justify-center text-xs text-[#666688]">Select a song to start listening</div>
+        </div>
+      </>
     );
   }
 
@@ -81,7 +86,7 @@ export default function MusicPlayer() {
       </AnimatePresence>
 
       <motion.div
-        className="relative border-t border-[#2a2a3a] bg-[#0d0d15]/95 px-6 backdrop-blur-xl"
+        className="relative hidden border-t border-[#2a2a3a] bg-[#0d0d15]/95 px-6 backdrop-blur-xl md:block"
         initial={{ y: 72 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
@@ -169,6 +174,41 @@ export default function MusicPlayer() {
               <Maximize2 className="h-5 w-5" />
             </button>
           </div>
+        </div>
+      </motion.div>
+
+      <motion.div
+        className="fixed bottom-[72px] left-0 right-0 z-20 border-t border-white/8 bg-[#0d0d15]/96 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
+        initial={{ y: 72 }}
+        animate={{ y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      >
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowModal(true)}
+            className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl"
+          >
+            <img src={currentSong.thumbnail} alt={currentSong.title} className="h-full w-full object-cover" />
+          </button>
+
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-[#e8e8f0]">{currentSong.title}</p>
+            <p className="truncate text-xs text-[#8888aa]">{currentSong.channelName}</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={togglePlay}
+            disabled={controlsDisabled}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e8e8f0] disabled:opacity-40"
+          >
+            {isPlaying ? <Pause className="h-4 w-4 fill-[#080810] text-[#080810]" /> : <Play className="ml-0.5 h-4 w-4 fill-[#080810] text-[#080810]" />}
+          </button>
+
+          <button type="button" onClick={() => setShowModal(true)} className="rounded-full p-2 text-[#8888aa]">
+            <Maximize2 className="h-5 w-5" />
+          </button>
         </div>
       </motion.div>
     </>

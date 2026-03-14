@@ -98,6 +98,10 @@ export const AuthProvider = ({ children }) => {
         name: response.data.user.name,
         email: response.data.user.email,
         avatarUrl: response.data.user.avatarUrl || '',
+        bio: response.data.user.bio || '',
+        createdAt: response.data.user.createdAt,
+        favoritesCount: response.data.user.favoritesCount || 0,
+        recentlyPlayedCount: response.data.user.recentlyPlayedCount || 0,
       };
       updateUser(nextUser);
       return nextUser;
