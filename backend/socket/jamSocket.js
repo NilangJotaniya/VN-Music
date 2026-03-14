@@ -11,6 +11,15 @@ const emitError = (socket, error) => {
   socket.emit('jam:error', { message: error.message || 'Jam session error.' });
 };
 
+const clearSocketRoom = (socket) => {
+  const activeCode = socket.data?.jamCode;
+  if (activeCode) {
+    socket.leave(roomName(activeCode));
+  }
+  socket.data.jamCode = null;
+  socket.data.memberId = null;
+};
+
 const initializeJamSocket = (server, allowedOrigins) => {
   const io = new Server(server, {
     cors: {
@@ -30,11 +39,19 @@ const initializeJamSocket = (server, allowedOrigins) => {
     socket.on('jam:subscribe', ({ code, memberId }) => {
       try {
         const session = jamSessionService.getSession(code, memberId);
+        clearSocketRoom(socket);
         socket.join(roomName(code));
+        socket.data.jamCode = session.code;
+        socket.data.memberId = memberId;
         socket.emit('jam:session', { session });
+        emitSession(io, code, session);
       } catch (error) {
         emitError(socket, error);
       }
+    });
+
+    socket.on('jam:unsubscribe', () => {
+      clearSocketRoom(socket);
     });
 
     socket.on('jam:sync', ({ code, memberId, playback }) => {
@@ -89,6 +106,10 @@ const initializeJamSocket = (server, allowedOrigins) => {
       } catch (error) {
         emitError(socket, error);
       }
+    });
+
+    socket.on('disconnect', () => {
+      clearSocketRoom(socket);
     });
   });
 

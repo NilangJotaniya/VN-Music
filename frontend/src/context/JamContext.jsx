@@ -24,10 +24,23 @@ export const JamProvider = ({ children }) => {
   const currentTimeRef = useRef(currentTime);
   const syncKeyRef = useRef('');
   const socketRef = useRef(null);
+  const sessionRef = useRef(null);
+  const memberIdRef = useRef(null);
+  const isLeavingRef = useRef(false);
+  const lastDisconnectToastRef = useRef(0);
+  const lastPlaybackSyncRef = useRef('');
 
   useEffect(() => {
     currentTimeRef.current = currentTime;
   }, [currentTime]);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
+  useEffect(() => {
+    memberIdRef.current = memberId;
+  }, [memberId]);
 
   const persistMember = useCallback((code, nextMemberId) => {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -52,29 +65,63 @@ export const JamProvider = ({ children }) => {
     socket.emit('jam:subscribe', { code, memberId: nextMemberId });
   }, []);
 
+  const unsubscribeSocket = useCallback(() => {
+    socketRef.current?.emit('jam:unsubscribe');
+  }, []);
+
   useEffect(() => {
     const socket = getSocket();
     socketRef.current = socket;
 
     const handleSession = ({ session: nextSession }) => {
-      setSession((prev) => normalizeSession(nextSession, prev?.memberId || memberId || nextSession.memberId || null));
+      const nextMemberId = memberIdRef.current || nextSession.memberId || null;
+      setSession(normalizeSession(nextSession, nextMemberId));
     };
 
     const handleError = ({ message }) => {
+      if (isLeavingRef.current) return;
+      if (message?.includes('You are no longer part of this jam session')) {
+        clearMember(sessionRef.current?.code || '');
+        unsubscribeSocket();
+        setSession(null);
+        setMemberId(null);
+      }
       if (message) toast(message, 'error');
     };
 
+    const handleConnect = () => {
+      const activeSession = sessionRef.current;
+      const activeMemberId = memberIdRef.current;
+      if (activeSession?.code && activeMemberId) {
+        socket.emit('jam:subscribe', { code: activeSession.code, memberId: activeMemberId });
+      }
+    };
+
+    const handleDisconnect = () => {
+      if (!sessionRef.current?.code || isLeavingRef.current) return;
+      const now = Date.now();
+      if (now - lastDisconnectToastRef.current > 4000) {
+        lastDisconnectToastRef.current = now;
+        toast('Jam connection lost. Reconnecting…', 'info', 2200);
+      }
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
     socket.on('jam:session', handleSession);
     socket.on('jam:error', handleError);
 
     return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
       socket.off('jam:session', handleSession);
       socket.off('jam:error', handleError);
     };
-  }, [memberId, normalizeSession, toast]);
+  }, [clearMember, normalizeSession, toast, unsubscribeSocket]);
 
   const createSession = useCallback(async () => {
     setLoading(true);
+    isLeavingRef.current = false;
     try {
       const response = await jamAPI.create({
         displayName: getDisplayName(user),
@@ -107,6 +154,7 @@ export const JamProvider = ({ children }) => {
     if (!trimmedCode) return null;
 
     setLoading(true);
+    isLeavingRef.current = false;
     try {
       const response = await jamAPI.join(trimmedCode, { displayName: getDisplayName(user) });
       const nextMemberId = response.data.memberId;
@@ -127,12 +175,15 @@ export const JamProvider = ({ children }) => {
 
   const leaveSession = useCallback(async () => {
     if (!session?.code || !memberId) {
+      unsubscribeSocket();
       setSession(null);
       setMemberId(null);
       return;
     }
 
     const code = session.code;
+    isLeavingRef.current = true;
+    unsubscribeSocket();
     try {
       await jamAPI.leave(code, { memberId });
     } catch {}
@@ -141,9 +192,10 @@ export const JamProvider = ({ children }) => {
     setSession(null);
     setMemberId(null);
     syncKeyRef.current = '';
-  }, [clearMember, memberId, session]);
+    lastPlaybackSyncRef.current = '';
+  }, [clearMember, memberId, session, unsubscribeSocket]);
 
-  const refreshSession = useCallback(async () => {
+  const refreshSession = useCallback(async ({ silent = false } = {}) => {
     if (!session?.code || !memberId) return;
 
     try {
@@ -152,12 +204,16 @@ export const JamProvider = ({ children }) => {
       setSession(nextSession);
       subscribeSocket(nextSession.code, memberId);
     } catch (error) {
-      toast(error.response?.data?.message || 'Jam session disconnected.', 'error');
+      if (isLeavingRef.current) return;
+      if (!silent) {
+        toast(error.response?.data?.message || 'Jam session disconnected.', 'error');
+      }
       clearMember(session.code);
+      unsubscribeSocket();
       setSession(null);
       setMemberId(null);
     }
-  }, [clearMember, memberId, normalizeSession, session, subscribeSocket, toast]);
+  }, [clearMember, memberId, normalizeSession, session, subscribeSocket, toast, unsubscribeSocket]);
 
   const emitSocket = useCallback((event, payload) => {
     if (!session?.code || !memberId) return;
@@ -182,11 +238,6 @@ export const JamProvider = ({ children }) => {
   }, [currentSong, emitSocket, isPlaying, memberId, queue, session?.code, session?.isHost]);
 
   useEffect(() => {
-    if (!session?.code) return;
-    refreshSession();
-  }, [refreshSession, session?.code]);
-
-  useEffect(() => {
     if (!session?.code || !session.isHost) return;
 
     const nextKey = JSON.stringify({
@@ -205,12 +256,30 @@ export const JamProvider = ({ children }) => {
     if (!session?.code || !session.isHost || !currentSong) return undefined;
     const interval = setInterval(() => {
       syncHostPlayback(currentTimeRef.current);
-    }, 4000);
+    }, 2000);
     return () => clearInterval(interval);
   }, [currentSong, session?.code, session?.isHost, syncHostPlayback]);
 
   useEffect(() => {
+    if (!session?.code || !memberId) return undefined;
+    const interval = setInterval(() => {
+      refreshSession({ silent: true });
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [memberId, refreshSession, session?.code]);
+
+  useEffect(() => {
     if (!session?.playback || session.isHost) return;
+
+    const nextPlaybackKey = JSON.stringify({
+      videoId: session.playback.song?.videoId || null,
+      queue: (session.playback.queue || []).map((song) => song.videoId),
+      isPlaying: session.playback.isPlaying,
+      currentTime: Math.floor(session.playback.currentTime || 0),
+    });
+
+    if (nextPlaybackKey === lastPlaybackSyncRef.current) return;
+    lastPlaybackSyncRef.current = nextPlaybackKey;
 
     syncPlaybackState({
       song: session.playback.song,
@@ -222,9 +291,10 @@ export const JamProvider = ({ children }) => {
 
   useEffect(() => () => {
     if (session?.code && memberId) {
+      unsubscribeSocket();
       jamAPI.leave(session.code, { memberId }).catch(() => {});
     }
-  }, [memberId, session?.code]);
+  }, [memberId, session?.code, unsubscribeSocket]);
 
   const inviteLink = useMemo(
     () => (session?.code ? `${window.location.origin}/jam?code=${session.code}` : ''),

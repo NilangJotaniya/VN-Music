@@ -76,6 +76,7 @@ export const PlayerProvider = ({ children }) => {
 
     if (currentSong?.videoId !== state.song.videoId) {
       pendingSyncRef.current = state;
+      playerRef.current = null;
       setCurrentSong(state.song);
       setQueue(Array.isArray(state.queue) ? state.queue : []);
       setCurrentTime(Number.isFinite(state.currentTime) ? state.currentTime : 0);

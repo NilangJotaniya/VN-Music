@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useEffect, useMemo, useRef, useState,
+} from 'react';
 import { motion } from 'framer-motion';
 import {
   Copy, Link as LinkIcon, LogOut, MessageCircle, PlayCircle, Radio, Shield, ThumbsUp, Users,
@@ -7,7 +9,23 @@ import { useSearchParams } from 'react-router-dom';
 import { useJamSession } from '../context/JamContext';
 import { usePlayer } from '../context/PlayerContext';
 
-const reactionOptions = ['🔥', '❤️', '👏', '🎶', '⚡'];
+const reactionOptions = ['fire', 'heart', 'clap', 'music', 'bolt'];
+
+const reactionLabels = {
+  fire: 'Fire',
+  heart: 'Love',
+  clap: 'Clap',
+  music: 'Music',
+  bolt: 'Hype',
+};
+
+const reactionEmoji = {
+  fire: 'F',
+  heart: 'L',
+  clap: 'C',
+  music: 'M',
+  bolt: 'H',
+};
 
 export default function JamSession() {
   const [searchParams] = useSearchParams();
@@ -28,10 +46,12 @@ export default function JamSession() {
   const { currentSong } = usePlayer();
   const [codeInput, setCodeInput] = useState(searchParams.get('code') || '');
   const [message, setMessage] = useState('');
+  const autoJoinRef = useRef('');
 
   useEffect(() => {
     const code = searchParams.get('code');
-    if (code && !session?.code) {
+    if (code && !session?.code && autoJoinRef.current !== code) {
+      autoJoinRef.current = code;
       joinSession(code);
     }
   }, [joinSession, searchParams, session?.code]);
@@ -50,27 +70,31 @@ export default function JamSession() {
   };
 
   return (
-    <div className="min-h-full pb-24">
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-8">
-        <section className="rounded-[28px] border border-white/8 bg-white/[0.03] p-6 md:p-8">
-          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+    <div className="min-h-full pb-28 md:pb-24">
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6 md:gap-8">
+        <section className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5 md:rounded-[28px] md:p-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.35em] text-vn-muted">Listen Together</p>
-              <h1 className="max-w-2xl text-[1.9rem] font-bold leading-tight tracking-[-0.03em] text-vn-text">Real-time jam sessions for synced listening with friends.</h1>
-              <p className="mt-3 max-w-2xl text-sm text-vn-muted">
-                Live playback, instant reactions, group chat, invite links, host transfer, moderator controls, and queue voting.
+              <h1 className="max-w-2xl text-[1.45rem] font-bold leading-tight tracking-[-0.03em] text-vn-text sm:text-[1.75rem] md:text-[1.95rem]">
+                Real-time jam sessions for synced listening with friends.
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-vn-muted">
+                Playback, reactions, room chat, invite links, host transfer, moderator controls, and collaborative queue voting.
               </p>
             </div>
-            <div className="rounded-3xl border border-[#7c3aed]/30 bg-[#7c3aed]/10 px-5 py-4">
+            <div className="rounded-[22px] border border-[#7c3aed]/30 bg-[#7c3aed]/10 px-4 py-4 sm:px-5">
               <p className="text-xs uppercase tracking-[0.3em] text-purple-300">Current source</p>
-              <p className="mt-2 text-sm text-vn-text">{currentSong ? currentSong.title : 'Select a song, then go live'}</p>
+              <p className="mt-2 max-w-xs text-sm leading-6 text-vn-text">
+                {currentSong ? currentSong.title : 'Select a song, then go live'}
+              </p>
             </div>
           </div>
         </section>
 
         {!session ? (
-          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <section className="rounded-[28px] border border-white/8 bg-[#111118] p-6">
+          <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+            <section className="rounded-[24px] border border-white/8 bg-[#111118] p-5 md:rounded-[28px] md:p-6">
               <div className="mb-5 flex items-center gap-3">
                 <div className="rounded-2xl bg-[#7c3aed]/15 p-3 text-purple-300">
                   <Radio size={20} />
@@ -91,10 +115,10 @@ export default function JamSession() {
               </button>
             </section>
 
-            <section className="rounded-[28px] border border-white/8 bg-[#111118] p-6">
+            <section className="rounded-[24px] border border-white/8 bg-[#111118] p-5 md:rounded-[28px] md:p-6">
               <h2 className="text-lg font-bold text-vn-text">Join with a code or link</h2>
               <p className="mt-2 text-sm text-vn-muted">Paste the room code or open a shared invite link.</p>
-              <div className="mt-5 flex gap-3">
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                 <input
                   value={codeInput}
                   onChange={(event) => setCodeInput(event.target.value.toUpperCase())}
@@ -114,14 +138,14 @@ export default function JamSession() {
             </section>
           </div>
         ) : (
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <section className="space-y-6">
-              <section className="rounded-[28px] border border-white/8 bg-[#111118] p-6">
+          <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+            <section className="space-y-5 md:space-y-6">
+              <section className="rounded-[24px] border border-white/8 bg-[#111118] p-5 md:rounded-[28px] md:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-vn-muted">Room Code</p>
                     <div className="mt-2 flex items-center gap-3">
-                      <span className="text-[2rem] font-bold tracking-[0.18em] text-vn-text">{session.code}</span>
+                      <span className="text-[1.55rem] font-bold tracking-[0.18em] text-vn-text sm:text-[1.9rem]">{session.code}</span>
                       <button type="button" onClick={() => copyText(session.code)} className="rounded-xl border border-white/10 p-2 text-vn-muted transition hover:border-[#7c3aed]/40 hover:text-purple-300">
                         <Copy size={16} />
                       </button>
@@ -145,14 +169,14 @@ export default function JamSession() {
                     <LinkIcon size={15} />
                     Copy invite link
                   </button>
-                  {reactionOptions.map((emoji) => (
+                  {reactionOptions.map((reactionKey) => (
                     <button
-                      key={emoji}
+                      key={reactionKey}
                       type="button"
-                      onClick={() => sendReaction(emoji)}
-                      className="rounded-2xl border border-white/10 px-3 py-2 text-lg transition hover:border-[#7c3aed]/40"
+                      onClick={() => sendReaction(reactionLabels[reactionKey])}
+                      className="rounded-2xl border border-white/10 px-3 py-2 text-sm font-semibold text-vn-text transition hover:border-[#7c3aed]/40"
                     >
-                      {emoji}
+                      {reactionEmoji[reactionKey]}
                     </button>
                   ))}
                 </div>
@@ -167,9 +191,9 @@ export default function JamSession() {
                   </div>
                 ) : null}
 
-                <div className="mt-6 rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
+                <div className="mt-6 rounded-[22px] border border-white/8 bg-white/[0.03] p-4 sm:p-5">
                   <p className="text-xs uppercase tracking-[0.3em] text-vn-muted">Live Playback</p>
-                  <h3 className="mt-3 text-lg font-bold text-vn-text">
+                  <h3 className="mt-3 text-base font-bold leading-7 text-vn-text sm:text-lg">
                     {session.playback?.song?.title || 'Waiting for the first song'}
                   </h3>
                   <p className="mt-1 text-sm text-vn-muted">
@@ -189,7 +213,7 @@ export default function JamSession() {
                 </div>
               </section>
 
-              <section className="rounded-[28px] border border-white/8 bg-[#111118] p-6">
+              <section className="rounded-[24px] border border-white/8 bg-[#111118] p-5 md:rounded-[28px] md:p-6">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="rounded-2xl bg-cyan-500/10 p-3 text-cyan-300">
                     <ThumbsUp size={18} />
@@ -226,8 +250,8 @@ export default function JamSession() {
               </section>
             </section>
 
-            <section className="space-y-6">
-              <section className="rounded-[28px] border border-white/8 bg-[#111118] p-6">
+            <section className="space-y-5 md:space-y-6">
+              <section className="rounded-[24px] border border-white/8 bg-[#111118] p-5 md:rounded-[28px] md:p-6">
                 <div className="mb-5 flex items-center gap-3">
                   <div className="rounded-2xl bg-cyan-500/10 p-3 text-cyan-300">
                     <Users size={20} />
@@ -269,7 +293,7 @@ export default function JamSession() {
                 </div>
               </section>
 
-              <section className="rounded-[28px] border border-white/8 bg-[#111118] p-6">
+              <section className="rounded-[24px] border border-white/8 bg-[#111118] p-5 md:rounded-[28px] md:p-6">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="rounded-2xl bg-[#7c3aed]/15 p-3 text-purple-300">
                     <MessageCircle size={18} />
@@ -293,7 +317,7 @@ export default function JamSession() {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row">
                   <input
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
@@ -303,6 +327,7 @@ export default function JamSession() {
                   <button
                     type="button"
                     onClick={() => {
+                      if (!message.trim()) return;
                       sendMessage(message);
                       setMessage('');
                     }}
