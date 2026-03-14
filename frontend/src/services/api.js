@@ -6,11 +6,12 @@
 // headers consistent across all API calls.
 
 import axios from 'axios';
+import { getApiBaseUrl } from './config';
 
 // The base URL points to your Express backend
 // In development: http://localhost:5000 (proxied via package.json "proxy")
 // In production: set REACT_APP_API_URL env var
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: BASE_URL,
