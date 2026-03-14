@@ -10,7 +10,7 @@ import { favoritesAPI, playlistsAPI } from '../../services/api';
 export default function SongCard({ song, songList = [], onFavoriteChange, onPlaySong, showIndex }) {
   const { currentSong, isPlaying, playSong, togglePlay } = usePlayer();
   const { isAuthenticated } = useAuth();
-  const { canControlPlayback, session } = useJamSession();
+  const { canControlPlayback } = useJamSession();
   const { toast } = useToast();
 
   const [isFav, setIsFav] = useState(song.isFavorite || false);
@@ -25,7 +25,6 @@ export default function SongCard({ song, songList = [], onFavoriteChange, onPlay
   const handlePlay = (event) => {
     event.stopPropagation();
     if (!canControlPlayback) {
-      toast(`Host controls playback in jam ${session.code}`, 'info');
       return;
     }
     if (isCurrent) togglePlay();

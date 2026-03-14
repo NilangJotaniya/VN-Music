@@ -14,8 +14,15 @@ const ICONS = {
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const idRef = useRef(0);
+  const recentToastRef = useRef(new Map());
 
   const toast = useCallback((message, type = 'success', duration = 3000) => {
+    const key = `${type}:${message}`;
+    const now = Date.now();
+    const lastShownAt = recentToastRef.current.get(key) || 0;
+    if (now - lastShownAt < 2200) return;
+    recentToastRef.current.set(key, now);
+
     const id = ++idRef.current;
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => {

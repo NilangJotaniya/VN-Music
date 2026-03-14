@@ -30,8 +30,9 @@ export const PlayerProvider = ({ children }) => {
 
     const nextTime = Number.isFinite(state.currentTime) ? state.currentTime : 0;
     const liveTime = playerRef.current.getCurrentTime?.() || 0;
+    const driftLimit = state.isPlaying ? 0.45 : 0.15;
 
-    if (Math.abs(liveTime - nextTime) > 1.5) {
+    if (Math.abs(liveTime - nextTime) > driftLimit) {
       playerRef.current.seekTo?.(nextTime, true);
       setCurrentTime(nextTime);
     }
@@ -149,7 +150,7 @@ export const PlayerProvider = ({ children }) => {
         setCurrentTime(playerRef.current.getCurrentTime() || 0);
         setDuration(playerRef.current.getDuration() || 0);
       }
-    }, 1000);
+    }, 500);
   }, []);
 
   const stopProgressTracking = useCallback(() => {

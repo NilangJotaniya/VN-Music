@@ -69,6 +69,12 @@ export default function JamSession() {
     } catch {}
   };
 
+  const submitMessage = () => {
+    if (!message.trim()) return;
+    sendMessage(message);
+    setMessage('');
+  };
+
   return (
     <div className="min-h-full pb-28 md:pb-24">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6 md:gap-8">
@@ -321,16 +327,18 @@ export default function JamSession() {
                   <input
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        submitMessage();
+                      }
+                    }}
                     placeholder="Send a message to the room"
                     className="flex-1 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-vn-text outline-none transition focus:border-[#7c3aed]"
                   />
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!message.trim()) return;
-                      sendMessage(message);
-                      setMessage('');
-                    }}
+                    onClick={submitMessage}
                     className="rounded-2xl bg-[#7c3aed] px-5 py-3 text-sm font-semibold text-white"
                   >
                     Send
