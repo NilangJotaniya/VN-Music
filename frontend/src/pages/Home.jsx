@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Clock3, Heart, MoreHorizontal, Play, Radio, Sparkles,
+  Clock3, Globe2, Heart, MoreHorizontal, Play, Radio, Sparkles, Stars,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useJamSession } from '../context/JamContext';
@@ -14,10 +14,13 @@ function formatDuration(value) {
   return value;
 }
 
-function SectionHeader({ title, href = '/search' }) {
+function SectionHeader({ title, subtitle, href = '/search' }) {
   return (
-    <div className="mb-5 flex items-center justify-between gap-4">
-      <h2 className="text-[1.45rem] font-bold tracking-[-0.025em] text-vn-text">{title}</h2>
+    <div className="mb-5 flex items-end justify-between gap-4">
+      <div>
+        <h2 className="text-[1.45rem] font-bold tracking-[-0.025em] text-vn-text">{title}</h2>
+        {subtitle ? <p className="mt-1 text-sm text-vn-muted">{subtitle}</p> : null}
+      </div>
       <Link to={href} className="text-sm text-vn-muted transition hover:text-vn-text">
         See all
       </Link>
@@ -128,11 +131,42 @@ function RecentRow({ song, songList }) {
   );
 }
 
+function DiscoveryStrip({ icon: Icon, title, subtitle, songs, href = '/search' }) {
+  if (!songs.length) return null;
+
+  return (
+    <section className="mb-14">
+      <div className="mb-5 flex items-end justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="mt-1 rounded-2xl bg-white/[0.04] p-3 text-vn-muted">
+            <Icon size={18} />
+          </div>
+          <div>
+            <h2 className="text-[1.45rem] font-bold tracking-[-0.025em] text-vn-text">{title}</h2>
+            <p className="mt-1 text-sm text-vn-muted">{subtitle}</p>
+          </div>
+        </div>
+        <Link to={href} className="text-sm text-vn-muted transition hover:text-vn-text">
+          See all
+        </Link>
+      </div>
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {songs.map((song, index) => (
+          <MediaCard key={`${title}-${song.videoId}`} song={song} songList={songs} size={index < 4 ? 'large' : 'small'} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
   const { session, canControlPlayback } = useJamSession();
   const { playSong } = usePlayer();
-  const [trending, setTrending] = useState([]);
+  const [worldTrending, setWorldTrending] = useState([]);
+  const [indiaTrending, setIndiaTrending] = useState([]);
+  const [indianPicks, setIndianPicks] = useState([]);
+  const [recommended, setRecommended] = useState([]);
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -140,15 +174,44 @@ export default function Home() {
     const load = async () => {
       setLoading(true);
       try {
-        const [trendingResponse, recentResponse] = await Promise.all([
-          youtubeAPI.trending(),
+        const [
+          worldResponse,
+          indiaResponse,
+          indianSearchResponse,
+          recentResponse,
+        ] = await Promise.all([
+          youtubeAPI.trending({ maxResults: 16 }),
+          youtubeAPI.trending({ regionCode: 'IN', maxResults: 12 }),
+          youtubeAPI.search('latest hindi songs bollywood', { maxResults: 12 }),
           isAuthenticated ? userAPI.getRecentlyPlayed() : Promise.resolve({ data: { recentlyPlayed: [] } }),
         ]);
 
-        setTrending(trendingResponse.data.songs || []);
-        setRecentlyPlayed(recentResponse.data.recentlyPlayed || []);
+        const recentSongs = recentResponse.data.recentlyPlayed || [];
+        setWorldTrending(worldResponse.data.songs || []);
+        setIndiaTrending(indiaResponse.data.songs || []);
+        setIndianPicks(indianSearchResponse.data.songs || []);
+        setRecentlyPlayed(recentSongs);
+
+        if (recentSongs.length) {
+          try {
+            const recommendedResponse = await youtubeAPI.related({
+              title: recentSongs[0].title,
+              channelName: recentSongs[0].channelName,
+              videoId: recentSongs[0].videoId,
+              maxResults: 12,
+            });
+            setRecommended(recommendedResponse.data.songs || []);
+          } catch {
+            setRecommended((worldResponse.data.songs || []).slice(4, 12));
+          }
+        } else {
+          setRecommended((worldResponse.data.songs || []).slice(4, 12));
+        }
       } catch {
-        setTrending([]);
+        setWorldTrending([]);
+        setIndiaTrending([]);
+        setIndianPicks([]);
+        setRecommended([]);
         setRecentlyPlayed([]);
       } finally {
         setLoading(false);
@@ -166,24 +229,21 @@ export default function Home() {
   }, []);
 
   const firstName = user?.name?.trim()?.split(' ')[0] || 'there';
-  const featured = trending[0];
-  const trendingNow = trending.slice(0, 4);
-  const recentRows = (recentlyPlayed.length ? recentlyPlayed : trending.slice(0, 6)).slice(0, 6);
-  const newReleases = trending.slice(4, 12);
+  const featured = indiaTrending[0] || worldTrending[0];
+  const topWorld = worldTrending.slice(0, 4);
+  const topIndia = indiaTrending.slice(0, 4);
+  const recentRows = (recentlyPlayed.length ? recentlyPlayed : worldTrending.slice(0, 6)).slice(0, 6);
+  const recommendationRows = recommended.slice(0, 8);
+  const indianRows = indianPicks.slice(0, 8);
 
   return (
     <div className="min-h-full pb-28">
-      <motion.section
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
+      <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-[1.5rem] font-bold tracking-[-0.03em] text-vn-text md:text-[2.3rem]">
-          {greeting}
-          , {firstName}
+          {greeting}, {firstName}
         </h1>
         <p className="mt-2 text-[13px] text-vn-muted">
-          Ready to discover your next favorite track?
+          A more complete discovery home with world charts, India charts, Indian picks, and recommendations that react to your listening.
         </p>
       </motion.section>
 
@@ -201,7 +261,9 @@ export default function Home() {
             </div>
 
             <div className="relative z-10">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b95cff]">Trending now</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b95cff]">
+                {indiaTrending[0]?.videoId === featured.videoId ? 'Top in India' : 'Top in the world'}
+              </p>
               <h2 className="mt-2.5 max-w-[760px] text-[1.18rem] font-semibold leading-[1.08] tracking-[-0.02em] text-vn-text md:text-[1.85rem]">
                 {featured.title}
               </h2>
@@ -211,7 +273,7 @@ export default function Home() {
               </p>
               <button
                 type="button"
-                onClick={() => canControlPlayback && playSong(featured, trending)}
+                onClick={() => canControlPlayback && playSong(featured, indiaTrending[0]?.videoId === featured.videoId ? indiaTrending : worldTrending)}
                 className="mt-5 inline-flex items-center gap-2.5 rounded-full bg-[#7c3aed] px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_45px_rgba(124,58,237,0.36)] transition hover:bg-[#8b46ff]"
               >
                 <Play size={16} fill="currentColor" />
@@ -223,7 +285,7 @@ export default function Home() {
       ) : null}
 
       <section className="mb-14">
-        <SectionHeader title="Trending Now" />
+        <SectionHeader title="Top Songs Worldwide" subtitle="Current global music discovery lane" />
 
         {loading ? (
           <div className="grid gap-5 lg:grid-cols-4">
@@ -240,21 +302,22 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {trendingNow.map((song, index) => (
-              <MediaCard
-                key={song.videoId}
-                song={song}
-                songList={trending}
-                size="large"
-                priority={index < 2}
-              />
+            {topWorld.map((song, index) => (
+              <MediaCard key={song.videoId} song={song} songList={worldTrending} size="large" priority={index < 2} />
             ))}
           </div>
         )}
       </section>
 
+      <DiscoveryStrip
+        icon={Globe2}
+        title="Top Songs in India"
+        subtitle="Region-based chart discovery using the live India music feed"
+        songs={topIndia}
+      />
+
       <section className="mb-14">
-        <SectionHeader title="Recently Played" />
+        <SectionHeader title="Recently Played" subtitle="Your actual listening history" href="/recently-played" />
 
         {loading ? (
           <div className="space-y-3">
@@ -278,46 +341,26 @@ export default function Home() {
         )}
       </section>
 
-      <section>
-        <SectionHeader title="New Releases" />
+      <DiscoveryStrip
+        icon={Sparkles}
+        title="Recommended For You"
+        subtitle="Built from your recent listening, then expanded through related tracks"
+        songs={recommendationRows}
+      />
 
-        {loading ? (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {[...Array(8)].map((_, index) => (
-              <div key={index} className="overflow-hidden rounded-[26px] bg-[#181824] p-4">
-                <div className="skeleton h-[220px] rounded-[22px]" />
-                <div className="mt-4 space-y-3">
-                  <div className="skeleton h-4 w-2/3" />
-                  <div className="skeleton h-3 w-1/3" />
-                  <div className="skeleton h-3 w-1/4" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : newReleases.length ? (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {newReleases.map((song, index) => (
-              <MediaCard
-                key={`new-${song.videoId}`}
-                song={song}
-                songList={trending}
-                size={index < 4 ? 'large' : 'small'}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-[28px] border border-white/8 bg-white/[0.02] px-6 py-10 text-vn-muted">
-            No new releases are available right now. Search for a genre to keep listening.
-          </div>
-        )}
-      </section>
+      <DiscoveryStrip
+        icon={Stars}
+        title="Indian Picks"
+        subtitle="Hindi and Indian listening lanes to make the home feed feel more local"
+        songs={indianRows}
+      />
 
-      {!loading && !trending.length ? (
+      {!loading && !worldTrending.length ? (
         <div className="mt-10 rounded-[28px] border border-white/8 bg-white/[0.02] px-6 py-10 text-center">
           <Sparkles className="mx-auto mb-3 text-vn-muted" size={28} />
           <p className="text-lg font-semibold text-vn-text">No songs loaded</p>
           <p className="mt-2 text-sm text-vn-muted">
-            Your backend did not return trending songs. Check the YouTube API route and try again.
+            Your backend did not return discovery songs. Check the YouTube API route and try again.
           </p>
         </div>
       ) : null}

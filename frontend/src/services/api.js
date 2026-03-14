@@ -89,8 +89,8 @@ export const playlistsAPI = {
 
 // YouTube
 export const youtubeAPI = {
-  search:   (q)   => api.get('/api/youtube/search', { params: { q } }),
-  trending: ()    => api.get('/api/youtube/trending'),
+  search:   (q, params = {})   => api.get('/api/youtube/search', { params: { q, ...params } }),
+  trending: (params = {})    => api.get('/api/youtube/trending', { params }),
   related:  (params) => api.get('/api/youtube/related', { params }),
 };
 
