@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ExternalLink, FileText, Heart, ListMusic, Music, SkipForward, Trash2, X,
+  ArrowDown, ArrowUp, ExternalLink, FileText, Heart, ListMusic, Music, SkipForward, Trash2, X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useJamSession } from '../../context/JamContext';
@@ -25,6 +25,7 @@ export default function NowPlayingModal({ onClose }) {
     seek,
     playSong,
     removeFromQueue,
+    moveQueueItem,
     clearQueue,
   } = usePlayer();
   const { lyrics, loading: lyricsLoading, error: lyricsError, fetchLyrics } = useLyrics();
@@ -210,6 +211,26 @@ export default function NowPlayingModal({ onClose }) {
                       >
                         <SkipForward size={14} />
                       </button>
+                      {canControlPlayback ? (
+                        <button
+                          type="button"
+                          onClick={() => moveQueueItem(index, index - 1)}
+                          disabled={index === 0}
+                          className="rounded-lg p-2 text-vn-muted transition hover:text-vn-text disabled:opacity-30"
+                        >
+                          <ArrowUp size={14} />
+                        </button>
+                      ) : null}
+                      {canControlPlayback ? (
+                        <button
+                          type="button"
+                          onClick={() => moveQueueItem(index, index + 1)}
+                          disabled={index === queue.length - 1}
+                          className="rounded-lg p-2 text-vn-muted transition hover:text-vn-text disabled:opacity-30"
+                        >
+                          <ArrowDown size={14} />
+                        </button>
+                      ) : null}
                       {canControlPlayback ? (
                         <button
                           type="button"

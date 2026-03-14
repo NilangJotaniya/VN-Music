@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  ArrowRight, Music, Play, Search as SearchIcon, Sparkles, Wand2, X,
+  ArrowRight, ListPlus, Music, Play, Search as SearchIcon, Sparkles, Wand2, X,
 } from 'lucide-react';
 import SongCard from '../components/SongCard/SongCard';
 import { useAuth } from '../context/AuthContext';
@@ -128,7 +128,7 @@ function QuickSearchCard({ item, onClick }) {
 
 export default function Search() {
   const { isAuthenticated } = useAuth();
-  const { playSong } = usePlayer();
+  const { playSong, addToQueue, playNextInQueue } = usePlayer();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -202,6 +202,14 @@ export default function Search() {
     setQuery('');
     setResults([]);
     setError(null);
+  };
+
+  const queueTopResult = (song, mode = 'queue') => {
+    if (mode === 'next') {
+      playNextInQueue(song);
+    } else {
+      addToQueue(song);
+    }
   };
 
   const showEmptySearch = !query.trim() && !loading;
@@ -399,6 +407,24 @@ export default function Search() {
                     <Play size={15} fill="currentColor" />
                     Play With Similar Queue
                   </button>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => queueTopResult(topResult, 'next')}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm font-semibold text-vn-text transition hover:border-white/20"
+                    >
+                      <Play size={13} />
+                      Play next
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => queueTopResult(topResult, 'queue')}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2.5 text-sm font-semibold text-vn-text transition hover:border-white/20"
+                    >
+                      <ListPlus size={13} />
+                      Add to queue
+                    </button>
+                  </div>
                 </div>
               </div>
 

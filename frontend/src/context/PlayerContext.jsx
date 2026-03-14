@@ -129,6 +129,25 @@ export const PlayerProvider = ({ children }) => {
     }));
   }, []);
 
+  const moveQueueItem = useCallback((fromIndex, toIndex) => {
+    setQueue((prev) => {
+      if (
+        fromIndex < 0
+        || toIndex < 0
+        || fromIndex >= prev.length
+        || toIndex >= prev.length
+        || fromIndex === toIndex
+      ) {
+        return prev;
+      }
+
+      const nextQueue = [...prev];
+      const [item] = nextQueue.splice(fromIndex, 1);
+      nextQueue.splice(toIndex, 0, item);
+      return nextQueue;
+    });
+  }, []);
+
   const clearQueue = useCallback(() => {
     setQueue([]);
   }, []);
@@ -242,6 +261,7 @@ export const PlayerProvider = ({ children }) => {
       addToQueue,
       playNextInQueue,
       removeFromQueue,
+      moveQueueItem,
       clearQueue,
       seek,
       changeVolume,

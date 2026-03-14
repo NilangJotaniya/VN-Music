@@ -30,9 +30,9 @@ export default function Favorites() {
               style={{ background: 'linear-gradient(135deg,rgba(239,68,68,0.3),rgba(239,68,68,0.1))', border: '1px solid rgba(239,68,68,0.2)' }}>
               <Heart size={18} className="text-red-400" fill="currentColor" />
             </div>
-            <h1 className="text-[1.75rem] font-bold tracking-[-0.025em] text-vn-text">Favorites</h1>
+            <h1 className="text-[1.75rem] font-bold tracking-[-0.025em] text-vn-text">Liked Songs</h1>
           </div>
-          <p className="text-vn-muted text-sm pl-1">{favorites.length} saved {favorites.length === 1 ? 'song' : 'songs'}</p>
+          <p className="text-vn-muted text-sm pl-1">{favorites.length} saved {favorites.length === 1 ? 'song' : 'songs'} in your smart likes playlist</p>
         </div>
         {favorites.length > 0 && (
           <motion.button whileTap={{ scale: 0.95 }} onClick={() => canControlPlayback && playSong(favorites[0], favorites)}
@@ -59,10 +59,10 @@ export default function Favorites() {
 
       {!loading && favorites.length === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24">
-          <Heart size={56} className="text-vn-muted mx-auto mb-4 opacity-20" />
-          <p className="text-vn-text font-semibold mb-2">No favorites yet</p>
-          <p className="text-vn-muted text-sm">Hit the heart on any song to save it here.</p>
-        </motion.div>
+              <Heart size={56} className="text-vn-muted mx-auto mb-4 opacity-20" />
+              <p className="text-vn-text font-semibold mb-2">No liked songs yet</p>
+              <p className="text-vn-muted text-sm">Hit the heart on any song to build your Liked Songs playlist.</p>
+            </motion.div>
       )}
 
       <AnimatePresence>

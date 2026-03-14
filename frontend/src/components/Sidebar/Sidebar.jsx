@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  CircleUserRound, Disc3, Heart, Home, Library, LogIn, LogOut, Music, PlusSquare, Radio, Search,
+  CircleUserRound, Clock3, Disc3, Heart, Home, Library, LogIn, LogOut, Music, PlusSquare, Radio, Search,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { usePlayer } from '../../context/PlayerContext';
@@ -12,7 +12,8 @@ import { getRecentPlaylists } from '../../utils/recentPlaylists';
 const navItems = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/search', label: 'Search', icon: Search },
-  { to: '/favorites', label: 'Favorites', icon: Heart, auth: true },
+  { to: '/liked-songs', label: 'Liked Songs', icon: Heart, auth: true },
+  { to: '/recently-played', label: 'Recent', icon: Clock3, auth: true },
   { to: '/playlists', label: 'Playlists', icon: Library, auth: true },
 ];
 

@@ -66,6 +66,7 @@ export const userAPI = {
   updateProfile:      (data) => api.put('/api/user/profile', data),
   getRecentlyPlayed:  ()     => api.get('/api/user/recently-played'),
   addRecentlyPlayed:  (song) => api.post('/api/user/recently-played', song),
+  clearRecentlyPlayed: ()    => api.delete('/api/user/recently-played'),
 };
 
 // Favorites

@@ -108,4 +108,27 @@ const getRecentlyPlayed = async (req, res) => {
   }
 };
 
-module.exports = { getProfile, updateProfile, addRecentlyPlayed, getRecentlyPlayed };
+// DELETE /api/user/recently-played
+const clearRecentlyPlayed = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    user.recentlyPlayed = [];
+    await user.save();
+
+    return res.json({ message: 'Recently played cleared.', recentlyPlayed: [] });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error clearing recently played.' });
+  }
+};
+
+module.exports = {
+  getProfile,
+  updateProfile,
+  addRecentlyPlayed,
+  getRecentlyPlayed,
+  clearRecentlyPlayed,
+};

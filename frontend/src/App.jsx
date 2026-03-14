@@ -9,6 +9,7 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Favorites from './pages/Favorites';
+import RecentlyPlayed from './pages/RecentlyPlayed';
 import Playlists from './pages/Playlists';
 import PlaylistDetail from './pages/PlaylistDetail';
 import Login from './pages/Login';
@@ -33,7 +34,9 @@ const AppRoutes = () => (
       <Route path="search" element={<Search />} />
       <Route path="jam" element={<JamSession />} />
       <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+      <Route path="favorites" element={<ProtectedRoute><Navigate to="/liked-songs" replace /></ProtectedRoute>} />
+      <Route path="liked-songs" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+      <Route path="recently-played" element={<ProtectedRoute><RecentlyPlayed /></ProtectedRoute>} />
       <Route path="playlists" element={<ProtectedRoute><Playlists /></ProtectedRoute>} />
       <Route path="playlists/:id" element={<ProtectedRoute><PlaylistDetail /></ProtectedRoute>} />
     </Route>

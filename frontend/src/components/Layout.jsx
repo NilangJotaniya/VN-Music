@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
-  Home, Library, Music, Radio, Search,
+  Clock3, Heart, Home, Music, Radio, Search,
 } from 'lucide-react';
 import Sidebar from './Sidebar/Sidebar';
 import MusicPlayer from './MusicPlayer/MusicPlayer';
@@ -11,7 +11,8 @@ import { useAuth } from '../context/AuthContext';
 const mobileNavItems = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/search', label: 'Search', icon: Search },
-  { to: '/playlists', label: 'Library', icon: Library, auth: true },
+  { to: '/liked-songs', label: 'Likes', icon: Heart, auth: true },
+  { to: '/recently-played', label: 'Recent', icon: Clock3, auth: true },
   { to: '/jam', label: 'Jam', icon: Radio },
 ];
 
@@ -50,7 +51,7 @@ function MobileBottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/8 bg-[#111118]/98 px-2 py-2 backdrop-blur-xl lg:hidden">
-      <div className="grid grid-cols-4 gap-1">
+      <div className="grid grid-cols-5 gap-1">
         {mobileNavItems.map((item) => {
           const Icon = item.icon;
           const locked = item.auth && !isAuthenticated;
