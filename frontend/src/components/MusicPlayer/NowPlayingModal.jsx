@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ExternalLink, FileText, Heart, ListMusic, Music, SkipForward, X,
+  ExternalLink, FileText, Heart, ListMusic, Music, SkipForward, Trash2, X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useJamSession } from '../../context/JamContext';
@@ -17,7 +17,15 @@ const formatTime = (seconds) => {
 
 export default function NowPlayingModal({ onClose }) {
   const {
-    currentSong, queue, isPlaying, currentTime, duration, seek, playSong,
+    currentSong,
+    queue,
+    isPlaying,
+    currentTime,
+    duration,
+    seek,
+    playSong,
+    removeFromQueue,
+    clearQueue,
   } = usePlayer();
   const { lyrics, loading: lyricsLoading, error: lyricsError, fetchLyrics } = useLyrics();
   const { isAuthenticated } = useAuth();
@@ -161,22 +169,57 @@ export default function NowPlayingModal({ onClose }) {
             <div className="flex-1 overflow-y-auto pr-2">
               {queue.length ? (
                 <div className="space-y-2">
+                  <div className="mb-3 flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.02] px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-vn-text">Up next</p>
+                      <p className="text-xs text-vn-muted">{queue.length} songs queued</p>
+                    </div>
+                    {canControlPlayback ? (
+                      <button
+                        type="button"
+                        onClick={clearQueue}
+                        className="rounded-xl border border-white/10 px-3 py-2 text-xs text-vn-muted transition hover:border-red-400/30 hover:text-red-300"
+                      >
+                        Clear queue
+                      </button>
+                    ) : null}
+                  </div>
                   {queue.map((song, index) => (
-                    <button
+                    <div
                       key={`${song.videoId}-${index}`}
-                      type="button"
-                      onClick={() => canControlPlayback && playSong(song, queue.slice(index), { queueOverride: queue.slice(index + 1) })}
-                      disabled={!canControlPlayback}
-                      className="group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-white/[0.04] disabled:opacity-60"
+                      className="group flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-white/[0.04]"
                     >
                       <span className="w-4 text-xs text-vn-muted">{index + 1}</span>
-                      <img src={song.thumbnail} alt="" className="h-10 w-10 rounded-xl object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => canControlPlayback && playSong(song, queue.slice(index), { queueOverride: queue.slice(index + 1) })}
+                        disabled={!canControlPlayback}
+                        className="contents disabled:opacity-60"
+                      >
+                        <img src={song.thumbnail} alt="" className="h-10 w-10 rounded-xl object-cover" />
+                      </button>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-vn-text">{song.title}</p>
                         <p className="truncate text-xs text-vn-muted">{song.channelName}</p>
                       </div>
-                      <SkipForward size={14} className="text-vn-muted transition group-hover:text-vn-text" />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => canControlPlayback && playSong(song, queue.slice(index), { queueOverride: queue.slice(index + 1) })}
+                        disabled={!canControlPlayback}
+                        className="rounded-lg p-2 text-vn-muted transition hover:text-vn-text disabled:opacity-50"
+                      >
+                        <SkipForward size={14} />
+                      </button>
+                      {canControlPlayback ? (
+                        <button
+                          type="button"
+                          onClick={() => removeFromQueue(song.videoId, index)}
+                          className="rounded-lg p-2 text-vn-muted transition hover:text-red-300"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      ) : null}
+                    </div>
                   ))}
                 </div>
               ) : (

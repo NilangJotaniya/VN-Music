@@ -112,6 +112,27 @@ export const PlayerProvider = ({ children }) => {
     playSong(next, remaining, { queueOverride: remaining });
   }, [playSong, queue]);
 
+  const addToQueue = useCallback((song) => {
+    if (!song?.videoId) return;
+    setQueue((prev) => [...prev, song]);
+  }, []);
+
+  const playNextInQueue = useCallback((song) => {
+    if (!song?.videoId) return;
+    setQueue((prev) => [song, ...prev]);
+  }, []);
+
+  const removeFromQueue = useCallback((videoId, index = null) => {
+    setQueue((prev) => prev.filter((song, songIndex) => {
+      if (index !== null) return songIndex !== index;
+      return song.videoId !== videoId;
+    }));
+  }, []);
+
+  const clearQueue = useCallback(() => {
+    setQueue([]);
+  }, []);
+
   const playPrev = useCallback(() => {
     if (currentTime > 3 && playerRef.current) {
       playerRef.current.seekTo(0);
@@ -218,6 +239,10 @@ export const PlayerProvider = ({ children }) => {
       togglePlay,
       playNext,
       playPrev,
+      addToQueue,
+      playNextInQueue,
+      removeFromQueue,
+      clearQueue,
       seek,
       changeVolume,
       toggleMute,

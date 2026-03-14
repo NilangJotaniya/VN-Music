@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Heart, MoreVertical, Pause, Play, Plus } from 'lucide-react';
+import { Heart, ListPlus, MoreVertical, Pause, Play, Plus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useJamSession } from '../../context/JamContext';
 import { usePlayer } from '../../context/PlayerContext';
@@ -8,7 +8,9 @@ import { useToast } from '../../context/ToastContext';
 import { favoritesAPI, playlistsAPI } from '../../services/api';
 
 export default function SongCard({ song, songList = [], onFavoriteChange, onPlaySong, showIndex }) {
-  const { currentSong, isPlaying, playSong, togglePlay } = usePlayer();
+  const {
+    currentSong, isPlaying, playSong, togglePlay, addToQueue, playNextInQueue,
+  } = usePlayer();
   const { isAuthenticated } = useAuth();
   const { canControlPlayback } = useJamSession();
   const { toast } = useToast();
@@ -89,6 +91,20 @@ export default function SongCard({ song, songList = [], onFavoriteChange, onPlay
     }
   };
 
+  const handleAddToQueue = (event, mode = 'queue') => {
+    event.stopPropagation();
+    if (!canControlPlayback) return;
+
+    if (mode === 'next') {
+      playNextInQueue(song);
+      toast('Will play next');
+    } else {
+      addToQueue(song);
+      toast('Added to queue');
+    }
+    setShowMenu(false);
+  };
+
   const createPlaylistAndAdd = async (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -155,7 +171,28 @@ export default function SongCard({ song, songList = [], onFavoriteChange, onPlay
                   style={{ background: 'rgba(20,20,32,0.98)', border: '1px solid rgba(255,255,255,0.08)' }}
                   onClick={(event) => event.stopPropagation()}
                 >
-                  <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-vn-muted">Add to playlist</p>
+                  <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-vn-muted">Queue actions</p>
+
+                  <div className="px-2 pb-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={(event) => handleAddToQueue(event, 'next')}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-vn-text transition-colors hover:bg-white/5"
+                    >
+                      <Play size={12} />
+                      Play next
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(event) => handleAddToQueue(event, 'queue')}
+                      className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-vn-text transition-colors hover:bg-white/5"
+                    >
+                      <ListPlus size={12} />
+                      Add to queue
+                    </button>
+                  </div>
+
+                  <p className="border-t border-white/8 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-vn-muted">Add to playlist</p>
 
                   <form onSubmit={createPlaylistAndAdd} className="px-3 pb-2 pt-1">
                     <div className="flex gap-2">
