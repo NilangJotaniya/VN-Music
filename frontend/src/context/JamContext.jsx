@@ -9,6 +9,7 @@ import { useToast } from './ToastContext';
 
 const JamContext = createContext(null);
 const STORAGE_KEY = 'vn_jam_member';
+const SYNC_AHEAD_BUFFER_MS = 350;
 
 const getDisplayName = (user) => user?.name || `Guest ${Math.floor(100 + Math.random() * 900)}`;
 
@@ -29,6 +30,7 @@ export const JamProvider = ({ children }) => {
   const isLeavingRef = useRef(false);
   const lastDisconnectToastRef = useRef(0);
   const lastPlaybackSyncRef = useRef('');
+  const serverOffsetRef = useRef(0);
 
   useEffect(() => {
     currentTimeRef.current = currentTime;
@@ -74,6 +76,9 @@ export const JamProvider = ({ children }) => {
     socketRef.current = socket;
 
     const handleSession = ({ session: nextSession }) => {
+      if (Number.isFinite(nextSession?.serverTime)) {
+        serverOffsetRef.current = nextSession.serverTime - Date.now();
+      }
       const nextMemberId = memberIdRef.current || nextSession.memberId || null;
       setSession(normalizeSession(nextSession, nextMemberId));
     };
@@ -201,6 +206,9 @@ export const JamProvider = ({ children }) => {
     try {
       const response = await jamAPI.get(session.code, memberId);
       const nextSession = normalizeSession(response.data.session, memberId);
+      if (Number.isFinite(response.data.session?.serverTime)) {
+        serverOffsetRef.current = response.data.session.serverTime - Date.now();
+      }
       setSession(nextSession);
     } catch (error) {
       if (isLeavingRef.current) return;
@@ -255,7 +263,7 @@ export const JamProvider = ({ children }) => {
     if (!session?.code || !session.isHost || !currentSong) return undefined;
     const interval = setInterval(() => {
       syncHostPlayback(currentTimeRef.current);
-    }, 1000);
+    }, 750);
     return () => clearInterval(interval);
   }, [currentSong, session?.code, session?.isHost, syncHostPlayback]);
 
@@ -263,7 +271,7 @@ export const JamProvider = ({ children }) => {
     if (!session?.code || !memberId) return undefined;
     const interval = setInterval(() => {
       refreshSession({ silent: true });
-    }, 3000);
+    }, 1500);
     return () => clearInterval(interval);
   }, [memberId, refreshSession, session?.code]);
 
@@ -291,11 +299,20 @@ export const JamProvider = ({ children }) => {
   useEffect(() => {
     if (!session?.playback || session.isHost) return;
 
+    const estimatedServerNow = Date.now() + serverOffsetRef.current;
+    const playbackUpdatedAt = Number.isFinite(session.playback.updatedAt) ? session.playback.updatedAt : null;
+    const elapsedSinceUpdateMs = playbackUpdatedAt
+      ? Math.max(0, estimatedServerNow - playbackUpdatedAt)
+      : 0;
+    const adjustedCurrentTime = session.playback.isPlaying
+      ? session.playback.currentTime + ((elapsedSinceUpdateMs + SYNC_AHEAD_BUFFER_MS) / 1000)
+      : session.playback.currentTime;
+
     const nextPlaybackKey = JSON.stringify({
       videoId: session.playback.song?.videoId || null,
       queue: (session.playback.queue || []).map((song) => song.videoId),
       isPlaying: session.playback.isPlaying,
-      currentTime: Math.floor(session.playback.currentTime || 0),
+      currentTime: Math.round((adjustedCurrentTime || 0) * 10) / 10,
     });
 
     if (nextPlaybackKey === lastPlaybackSyncRef.current) return;
@@ -305,7 +322,7 @@ export const JamProvider = ({ children }) => {
       song: session.playback.song,
       queue: session.playback.queue,
       isPlaying: session.playback.isPlaying,
-      currentTime: session.playback.currentTime,
+      currentTime: adjustedCurrentTime,
     });
   }, [session, syncPlaybackState]);
 
