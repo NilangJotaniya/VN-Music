@@ -9,6 +9,40 @@ import { useJamSession } from '../context/JamContext';
 import { usePlayer } from '../context/PlayerContext';
 import { userAPI, youtubeAPI } from '../services/api';
 
+const FALLBACK_THUMBNAIL =
+  'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect width=%22320%22 height=%22180%22 fill=%22%23222%22/%3E%3Cpath d=%22M64 52h192a12 12 0 0112 12v52a12 12 0 01-12 12H64a12 12 0 01-12-12V64a12 12 0 0112-12zm24 14a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12zm46-43a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12zm46-43a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12z%22 fill=%22%23aaa%22/%3E%3C/svg%3E';
+
+const getThumbnailUrl = (song) => {
+  if (!song) return FALLBACK_THUMBNAIL;
+
+  const candidate = (song.thumbnail || '').trim();
+  if (candidate && (candidate.startsWith('http://') || candidate.startsWith('https://'))) {
+    return candidate;
+  }
+
+  // If the backend didn't provide a thumbnail URL, build one using the YouTube videoId.
+  if (song.videoId) {
+    return `https://i.ytimg.com/vi/${song.videoId}/mqdefault.jpg`;
+  }
+
+  return FALLBACK_THUMBNAIL;
+};
+
+const handleThumbnailError = (event, song) => {
+  const el = event.target;
+  if (!el) return;
+
+  const fallback = getThumbnailUrl(song);
+  if (el.src !== fallback) {
+    el.onerror = null;
+    el.src = fallback;
+    return;
+  }
+
+  el.onerror = null;
+  el.src = FALLBACK_THUMBNAIL;
+};
+
 function formatDuration(value) {
   if (!value) return '--:--';
   return value;
@@ -48,10 +82,11 @@ function MediaCard({
     >
       <div className={`relative overflow-hidden ${large ? 'h-[250px]' : 'h-[220px]'}`}>
         <img
-          src={song.thumbnail}
+          src={getThumbnailUrl(song)}
           alt={song.title}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
           loading={priority ? 'eager' : 'lazy'}
+          onError={(event) => handleThumbnailError(event, song)}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#181824] via-transparent to-transparent" />
         <div className={`absolute inset-0 flex items-center justify-center transition ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
@@ -103,7 +138,12 @@ function RecentRow({ song, songList }) {
       }`}
     >
       <div className="relative h-14 w-14 overflow-hidden rounded-2xl">
-        <img src={song.thumbnail} alt={song.title} className="h-full w-full object-cover" />
+        <img
+          src={getThumbnailUrl(song)}
+          alt={song.title}
+          className="h-full w-full object-cover"
+          onError={(event) => handleThumbnailError(event, song)}
+        />
         {isActive ? (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
             {isPlaying ? (
@@ -257,7 +297,12 @@ export default function Home() {
           <div className="pointer-events-none absolute inset-y-0 left-1/3 w-64 bg-[#7c3aed]/20 blur-[120px]" />
           <div className="grid gap-5 lg:grid-cols-[180px,minmax(0,1fr)] lg:items-center">
             <div className="relative h-[180px] w-[180px] overflow-hidden rounded-[22px] bg-white/5 shadow-[0_22px_55px_rgba(0,0,0,0.28)]">
-              <img src={featured.thumbnail} alt={featured.title} className="h-full w-full object-cover" />
+              <img
+                src={getThumbnailUrl(featured)}
+                alt={featured.title}
+                className="h-full w-full object-cover"
+                onError={(event) => handleThumbnailError(event, featured)}
+              />
             </div>
 
             <div className="relative z-10">
