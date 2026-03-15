@@ -103,11 +103,18 @@ function MediaCard({
   };
 
   return (
-    <motion.button
-      type="button"
+    <motion.div
+      role="button"
+      tabIndex={0}
       whileHover={{ y: -4 }}
       whileTap={{ scale: 0.985 }}
       onClick={() => canControlPlayback && playSong(song, songList)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          if (canControlPlayback) playSong(song, songList);
+        }
+      }}
       className={`group overflow-hidden rounded-[26px] bg-[#181824] text-left shadow-[0_12px_40px_rgba(0,0,0,0.22)] transition ${
         large ? 'min-h-[330px]' : 'min-h-[310px]'
       }`}
@@ -157,7 +164,7 @@ function MediaCard({
           </div>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }
 
