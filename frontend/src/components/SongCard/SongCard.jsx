@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Heart, ListPlus, MoreVertical, Pause, Play, Plus } from 'lucide-react';
+import { Heart, ListPlus, Link as LinkIcon, MoreVertical, Pause, Play, Plus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useJamSession } from '../../context/JamContext';
 import { usePlayer } from '../../context/PlayerContext';
@@ -88,6 +88,33 @@ export default function SongCard({ song, songList = [], onFavoriteChange, onPlay
       setShowMenu(false);
     } catch (error) {
       toast(error.response?.data?.message || 'Failed to add to playlist', 'error');
+    }
+  };
+
+  const getYouTubeUrl = () => (song.videoId ? `https://youtu.be/${song.videoId}` : '');
+
+  const handleShare = async (event) => {
+    event.stopPropagation();
+    const url = getYouTubeUrl();
+    if (!url) {
+      toast('Unable to share this song', 'error');
+      return;
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: song.title, text: song.channelName, url });
+        toast('Shared via system share sheet');
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        toast('Link copied to clipboard');
+      } else {
+        throw new Error('Clipboard API not available');
+      }
+    } catch (error) {
+      toast('Could not share song', 'error');
+    } finally {
+      setShowMenu(false);
     }
   };
 
@@ -233,6 +260,17 @@ export default function SongCard({ song, songList = [], onFavoriteChange, onPlay
                       </button>
                     ))
                   )}
+
+                  <div className="border-t border-white/8 px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-vn-text transition-colors hover:bg-white/5"
+                    >
+                      <LinkIcon size={12} />
+                      <span>Share song</span>
+                    </button>
+                  </div>
                 </motion.div>
               ) : null}
             </AnimatePresence>

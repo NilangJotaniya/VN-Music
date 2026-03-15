@@ -7,7 +7,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useJamSession } from '../context/JamContext';
 import { usePlayer } from '../context/PlayerContext';
-import { userAPI, youtubeAPI } from '../services/api';
+import { useToast } from '../context/ToastContext';
+import { favoritesAPI, userAPI, youtubeAPI } from '../services/api';
 
 const FALLBACK_THUMBNAIL =
   'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 180%22%3E%3Crect width=%22320%22 height=%22180%22 fill=%22%23222%22/%3E%3Cpath d=%22M64 52h192a12 12 0 0112 12v52a12 12 0 01-12 12H64a12 12 0 01-12-12V64a12 12 0 0112-12zm24 14a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12zm46-43a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12zm46-43a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12zm0 26a6 6 0 100 12 6 6 0 000-12z%22 fill=%22%23aaa%22/%3E%3C/svg%3E';
@@ -67,8 +68,39 @@ function MediaCard({
 }) {
   const { currentSong, isPlaying, playSong } = usePlayer();
   const { canControlPlayback } = useJamSession();
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const [isFav, setIsFav] = useState(false);
+
   const isActive = currentSong?.videoId === song.videoId;
   const large = size === 'large';
+
+  const toggleFavorite = async (event) => {
+    event.stopPropagation();
+    if (!isAuthenticated) {
+      toast('Sign in to save favorites', 'info');
+      return;
+    }
+
+    try {
+      if (isFav) {
+        await favoritesAPI.remove(song.videoId);
+        setIsFav(false);
+        toast('Removed from favorites');
+      } else {
+        await favoritesAPI.add(song);
+        setIsFav(true);
+        toast('Added to favorites');
+      }
+    } catch (error) {
+      if (error.response?.status === 409) {
+        setIsFav(true);
+        toast('Already in favorites', 'info');
+      } else {
+        toast('Failed to update favorites', 'error');
+      }
+    }
+  };
 
   return (
     <motion.button
@@ -113,7 +145,14 @@ function MediaCard({
         <div className="flex items-center justify-between text-vn-muted">
           <span className="text-sm">{formatDuration(song.duration)}</span>
           <div className="flex items-center gap-3">
-            <Heart size={18} />
+            <button
+              type="button"
+              onClick={toggleFavorite}
+              className={`rounded-lg p-1.5 transition-all ${isFav ? 'text-red-400' : 'text-vn-muted hover:text-red-400'}`}
+              aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Heart size={18} fill={isFav ? 'currentColor' : 'none'} />
+            </button>
             <MoreHorizontal size={18} />
           </div>
         </div>
