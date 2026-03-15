@@ -91,6 +91,10 @@ export const JamProvider = ({ children }) => {
         setSession(null);
         setMemberId(null);
       }
+
+      // Avoid spamming the user with expected 'host-only' errors when they are not the host.
+      if (message?.includes('Only the host')) return;
+
       if (message) toast(message, 'error');
     };
 
