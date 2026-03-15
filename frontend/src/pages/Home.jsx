@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -71,6 +71,36 @@ function MediaCard({
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [isFav, setIsFav] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  const shareLink = song.videoId ? `https://youtu.be/${song.videoId}` : '';
+
+  const copyLink = async (event) => {
+    event.stopPropagation();
+    if (!shareLink) return;
+
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      toast('Link copied to clipboard');
+    } catch {
+      toast('Failed to copy link', 'error');
+    }
+    setMenuOpen(false);
+  };
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    const handleOutsideClick = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [menuOpen]);
 
   const isActive = currentSong?.videoId === song.videoId;
   const large = size === 'large';
@@ -151,7 +181,7 @@ function MediaCard({
 
         <div className="flex items-center justify-between text-vn-muted">
           <span className="text-sm">{formatDuration(song.duration)}</span>
-          <div className="flex items-center gap-3">
+          <div className="relative flex items-center gap-3">
             <button
               type="button"
               onClick={toggleFavorite}
@@ -160,7 +190,33 @@ function MediaCard({
             >
               <Heart size={18} fill={isFav ? 'currentColor' : 'none'} />
             </button>
-            <MoreHorizontal size={18} />
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setMenuOpen((prev) => !prev);
+              }}
+              className="rounded-lg p-1.5 text-vn-muted transition hover:text-vn-text"
+              aria-label="More options"
+            >
+              <MoreHorizontal size={18} />
+            </button>
+            {menuOpen ? (
+              <div
+                ref={menuRef}
+                className="absolute right-0 top-10 z-10 w-44 rounded-xl border border-white/10 bg-[#0b0b14] p-2 shadow-xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={copyLink}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-vn-text transition hover:bg-white/5"
+                >
+                  <span>Copy link</span>
+                  <span className="text-xs text-vn-muted">↗</span>
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
